@@ -1,0 +1,42 @@
+name: Build and test
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: macos-26
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Inspect toolchain and configuration
+        run: |
+          xcodebuild -version
+          for script in Scripts/*.sh; do bash -n "$script"; done
+          plutil -lint Config/Info.plist Config/Transcriber.entitlements Transcriber.xcodeproj/project.pbxproj
+          python3 Scripts/check-content.py
+      - name: Core and persistence tests
+        run: bash Scripts/test.sh
+      - name: Synthetic media decoding
+        run: bash Scripts/check-media.sh
+      - name: Build and verify local release
+        run: bash Scripts/build.sh CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM=
+      - name: Check package integrity
+        working-directory: build/Release
+        run: shasum -a 256 -c SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: Transcriber-local-arm64
+          path: |
+            build/Release/Transcriber-macOS.zip
+            build/Release/SHA256SUMS
+            build/Release/SOURCE-SHA256
+          retention-days: 14
