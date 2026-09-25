@@ -18,7 +18,9 @@ struct TranscriberSidebar: View {
                         }
                     }
                     if model.tracks.count > 1 {
-                        Picker("Audio track", selection: Binding(get: { model.session.trackID }, set: model.setTrack)) {
+                        Picker("Audio track", selection: Binding(
+                            get: { model.session.trackID }, set: { model.setTrack($0) }
+                        )) {
                             ForEach(model.tracks) { Text($0.label).tag($0.id) }
                         }
                         .disabled(model.editorLocked || !model.session.passages.isEmpty)

@@ -70,8 +70,9 @@ struct TranscriberRootView: View {
                 .disabled(!model.canExport)
                 .help("Save the transcript as text (Command-S)")
             Menu("Export Options", systemImage: "ellipsis.circle") {
+                // Explicit closures avoid a Swift 6.3 IRGen crash adapting actor-isolated method references.
                 Toggle("Include Timestamps", isOn: Binding(
-                    get: { model.session.includeTimestamps }, set: model.timestamps
+                    get: { model.session.includeTimestamps }, set: { model.timestamps($0) }
                 ))
                 .disabled(model.editorLocked)
             }
